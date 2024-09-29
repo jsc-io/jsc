@@ -22,12 +22,14 @@ class Parser {
   
     parseStatement() {
       const token = this.peek();
-  
+      if (token.type === 'IDENTIFIER' && token.value === 'function') {
+        return this.parseFunctionDeclaration(); 
+      }
       switch (token.type) {
         case 'IDENTIFIER':
-          return this.parseFunctionCallOrExpression();
+            return this.parseFunctionCallOrExpression();
         case 'LBRACE':
-          return this.parseBlock();
+            return this.parseBlock();
         case 'SEMICOLON':
           this.consume('SEMICOLON'); 
           return { type: 'EmptyStatement' };
@@ -36,6 +38,24 @@ class Parser {
       }
     }
   
+    parseFunctionDeclaration() {
+        this.consume('IDENTIFIER'); 
+        const identifier = this.consume('IDENTIFIER'); 
+        this.consume('LPAREN'); 
+        const args = this.parseArguments(); 
+        this.consume('RPAREN'); 
+        
+        const body = this.parseBlock(); 
+        
+        return {
+          type: 'FunctionDeclaration',
+          name: identifier.value,
+          params: args,
+          body: body, 
+          inferredType: 'void' 
+        };
+      }
+      
     parseFunctionCallOrExpression() {
       const identifier = this.consume('IDENTIFIER');
   
@@ -44,7 +64,7 @@ class Parser {
       } else if (this.peek().type === 'DOT') {
         return this.parseMethodCall(identifier);
       } else {
-        return { type: 'Identifier', name: identifier.value }; 
+        return { type: 'Identifier', name: identifier.value, inferredType: 'int' }; 
       }
     }
   
@@ -68,10 +88,16 @@ class Parser {
       const args = this.parseArguments();
       this.consume('RPAREN');
   
+      let inferredType = 'void';  
+      if (args.some(arg => arg.type === 'NumberLiteral')) {
+        inferredType = args.some(arg => arg.value.includes('.')) ? 'double' : 'int';
+      }
+  
       return {
         type: 'FunctionCall',
         name: identifier.value,
-        arguments: args
+        arguments: args,
+        inferredType
       };
     }
   

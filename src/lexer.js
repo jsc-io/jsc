@@ -1,4 +1,3 @@
-// lexer.js
 class Lexer {
     constructor(input) {
       this.input = input;

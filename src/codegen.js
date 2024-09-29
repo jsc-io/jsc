@@ -6,15 +6,18 @@ class CodeGen {
         case 'Program':
           return (
             standardHeaders +
-            node.body.map(this.generate.bind(this)).join('\n') +
-            `\nint main() {\n  return 0;\n}`
+            node.body
+              .filter(stmt => stmt.type !== 'FunctionCall') 
+              .map(this.generate.bind(this))
+              .join('\n') +
+            `\nint main() {\n${this.generateMainCalls(node)}\n  return 0;\n}`
           );
   
         case 'FunctionDeclaration':
-          return `void ${node.name}() {\n${node.body
-            .map(this.generate.bind(this))
-            .join('\n')}\n}`;
-  
+            case 'FunctionDeclaration':
+                let returnType = this.inferFunctionReturnType(node);
+                return `${returnType} ${node.name}() ${this.generate(node.body)}`;
+           
         case 'Block':
           return `{\n${node.body.map(this.generate.bind(this)).join('\n')}\n}`;
   
@@ -61,11 +64,41 @@ class CodeGen {
           return node.value;
   
         case 'EmptyStatement':
-          return ';';
+          return ''; 
   
         default:
           throw new Error(`Unknown node type: ${node.type}`);
       }
+    }
+  
+
+    inferFunctionReturnType(node) {
+        
+        if (node.body && Array.isArray(node.body)) { 
+          if (node.body.some(stmt => stmt.type === 'ReturnStatement')) {
+            let returnStmt = node.body.find(stmt => stmt.type === 'ReturnStatement');
+            
+            if (returnStmt.argument) {
+              switch (returnStmt.argument.type) {
+                case 'NumericLiteral':
+                  return returnStmt.argument.value.includes('.') ? 'double' : 'int';
+                case 'Identifier':
+                  return 'int';
+                default:
+                  return 'void';
+              }
+            }
+          }
+        }
+        return 'void';
+      }
+    
+  
+    generateMainCalls(node) {
+      const functionCalls = node.body
+        .filter(stmt => stmt.type === 'FunctionCall') 
+        .map(this.generate.bind(this));
+      return functionCalls.join('\n');
     }
   
     generateMethodCall(node) {

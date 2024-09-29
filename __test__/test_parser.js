@@ -1,5 +1,5 @@
-const Lexer = require('../lexer');
-const Parser = require('../parser');
+const Lexer = require('../src/lexer');
+const Parser = require('../src/parser');
 
 
 const sourceCode = `

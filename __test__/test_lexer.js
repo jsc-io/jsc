@@ -1,4 +1,4 @@
-const Lexer = require('../lexer');
+const Lexer = require('../src/lexer');
 
 const input = `
 function hello() {
